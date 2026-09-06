@@ -1,0 +1,20 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate entry point and local assets
+        shell: python
+        run: |
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Parser(HTMLParser):
+              def handle_starttag(self, tag, attrs):
+                  values = dict(attrs)
+                  ref = values.get('src') or values.get('href')
+                  if ref and not ref.startswith(('#', 'http:', 'https:', 'mailto:')):
+                      assert Path(ref.split('?', 1)[0]).exists(), f'Missing asset: {ref}'
+          parser = Parser()
+          parser.feed(Path('index.html').read_text(encoding='utf-8'))
